@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Sync manifest version to tag
         run: |
@@ -34,7 +36,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add custom_components/wst/manifest.json
           git diff --cached --quiet || git commit -m "chore: sync version to ${{ github.ref_name }}"
-          git push origin HEAD:refs/heads/${{ github.event.base_ref || 'main' }}
+          git push origin HEAD:main
 
       - name: Home Assistant hassfest
         uses: home-assistant/actions/hassfest@master
