@@ -1,7 +1,8 @@
-"""API client wrapper for the WST Status Board API.
+"""API client for the WST Status Board API.
 
-Wraps the generated wst_api_client package with async methods
-suitable for use within Home Assistant's event loop.
+Uses aiohttp to call the WST REST API directly, avoiding dependency
+on the generated wst_api_client package structure which may vary
+between versions and generator configurations.
 """
 
 from __future__ import annotations
@@ -19,98 +20,76 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+PATH_SITUATION = "/situation"
+PATH_INCIDENT_ACTIVE = "/incident/active"
+PATH_INCIDENT_SCHEDULED = "/incident/scheduled"
+
 
 class WSTApiClient:
-    """Async wrapper around the wst_api_client for Home Assistant.
-
-    The generated openapi-client is synchronous (urllib3-based),
-    so all calls are dispatched via hass.async_add_executor_job.
-    """
+    """Async client for the WST Status Board API using aiohttp directly."""
 
     def __init__(self, hass: HomeAssistant, base_url: str = API_BASE_URL) -> None:
         self._hass = hass
-        self._base_url = base_url
-        self._api_client = None
-        self._api_instance = None
+        self._base_url = base_url.rstrip("/")
+        self._session: aiohttp.ClientSession | None = None
 
-    def _ensure_client(self) -> None:
-        """ lazily initialize the generated API client and instance."""
-        if self._api_client is not None:
-            return
-
-        try:
-            from wst_api_client import ApiClient, Configuration
-            from wst_api_client.api.default_api import DefaultApi
-        except ImportError as err:
-            raise WSTApiError(
-                "wst_api_client package is not installed. "
-                "Install it with: pip install wst_api_client"
-            ) from err
-
-        configuration = Configuration(host=self._base_url)
-        self._api_client = ApiClient(configuration=configuration)
-        self._api_instance = DefaultApi(self._api_client)
+    def _get_session(self) -> aiohttp.ClientSession:
+        """Get the shared aiohttp session from HA."""
+        if self._session is None or self._session.closed:
+            from homeassistant.helpers.aiohttp_client import async_get_clientsession
+            self._session = async_get_clientsession(self._hass)
+        return self._session
 
     async def async_get_situation(self) -> dict:
         """Fetch the current tunnel situation from the API."""
-        return await self._async_call_api("get_situation")
+        return await self._async_get(PATH_SITUATION)
 
     async def async_get_active_incidents(self) -> list:
         """Fetch active incidents from the API."""
-        return await self._async_call_api("get_incident_active")
+        return await self._async_get(PATH_INCIDENT_ACTIVE)
 
     async def async_get_scheduled_incidents(self) -> list:
         """Fetch scheduled incidents from the API."""
-        return await self._async_call_api("get_incident_scheduled")
+        return await self._async_get(PATH_INCIDENT_SCHEDULED)
 
-    async def _async_call_api(self, method_name: str) -> object:
-        """Call a synchronous API method via executor job and return raw response data."""
-        self._ensure_client()
-
-        method = getattr(self._api_instance, method_name, None)
-        if method is None:
-            raise WSTApiError(f"API method '{method_name}' not found in wst_api_client")
+    async def _async_get(self, path: str) -> dict | list:
+        """Make a GET request to the API and return the JSON response."""
+        url = f"{self._base_url}{path}"
+        _LOGGER.debug("Fetching %s", url)
 
         try:
-            result = await self._hass.async_add_executor_job(method)
+            session = self._get_session()
+            async with session.get(url, headers={"Accept": "application/json"}, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                if response.status == 401:
+                    raise WSTApiAuthError(f"Authentication failed (HTTP {response.status})")
+                if response.status == 403:
+                    raise WSTApiAuthError(f"Access forbidden (HTTP {response.status})")
+                if response.status >= 400:
+                    text = await response.text()
+                    raise WSTApiCommunicationError(
+                        f"HTTP {response.status} from {url}: {text[:200]}"
+                    )
+                return await response.json(content_type=None)
+
+        except WSTApiError:
+            raise
+        except aiohttp.ClientConnectorError as err:
+            raise WSTApiCommunicationError(f"Cannot connect to {self._base_url}: {err}") from err
+        except aiohttp.ServerTimeoutError as err:
+            raise WSTApiTimeoutError(f"Timeout connecting to {url}: {err}") from err
         except aiohttp.ClientError as err:
-            raise WSTApiCommunicationError(
-                f"Communication error calling {method_name}: {err}"
-            ) from err
-        except TimeoutError as err:
-            raise WSTApiTimeoutError(
-                f"Timeout calling {method_name}: {err}"
-            ) from err
-        except Exception as err:
-            error_msg = str(err).lower()
-            if "unauthorized" in error_msg or "forbidden" in error_msg or "401" in error_msg or "403" in error_msg:
-                raise WSTApiAuthError(f"Auth error calling {method_name}: {err}") from err
-            raise WSTApiError(f"Error calling {method_name}: {err}") from err
-
-        if result is None:
-            raise WSTApiCommunicationError(f"API returned None for {method_name}")
-
-        # Convert generated model to dict for stable processing
-        if hasattr(result, "to_dict"):
-            return result.to_dict()
-        if isinstance(result, list):
-            return [item.to_dict() if hasattr(item, "to_dict") else item for item in result]
-        return result
+            raise WSTApiCommunicationError(f"Request error: {err}") from err
 
     async def async_validate_connection(self) -> bool:
         """Test the API connection by fetching the situation endpoint."""
         try:
             await self.async_get_situation()
+            _LOGGER.info("WST API connection validated successfully")
             return True
-        except WSTApiError:
+        except WSTApiError as err:
+            _LOGGER.warning("WST API connection test failed: %s", err)
             return False
 
     async def async_close(self) -> None:
-        """Close the API client and release resources."""
-        if self._api_client is not None:
-            try:
-                await self._hass.async_add_executor_job(self._api_client.close)
-            except Exception:
-                _LOGGER.debug("Error closing API client", exc_info=True)
-            self._api_client = None
-            self._api_instance = None
+        """Release references. HA manages the shared session lifecycle."""
+        self._session = None
