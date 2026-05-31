@@ -8,6 +8,5 @@
   "codeowners": ["@awesomeprojects2"],
   "requirements": ["wst_api_client>=0.0.1"],
   "iot_class": "cloud_polling",
-  "loggers": ["wst_api_client"],
-  "homeassistant": "2024.1.0"
+  "loggers": ["wst_api_client"]
 }
