@@ -1,0 +1,39 @@
+[
+  {
+    "title": "Gepland onderhoud Westerscheldetunnel",
+    "startDate": "2022-10-15T06:00:00+00:00",
+    "statuses": [
+      {
+        "roadStatuses": [
+          {
+            "road": {
+              "name": "westerscheldetunnel-east",
+              "direction": "north"
+            },
+            "states": [
+              {
+                "name": "roadworks",
+                "severity": "low",
+                "priority": 1,
+                "icon": "",
+                "category": "situations"
+              }
+            ],
+            "detours": []
+          }
+        ],
+        "phase": "scheduled",
+        "additionalInformation": [
+          {
+            "direction": "both",
+            "description": "Gepland onderhoud: westbuis gesloten van 22:00-06:00.",
+            "notify": true
+          }
+        ]
+      }
+    ],
+    "phase": "scheduled",
+    "scheduled": true,
+    "published": true
+  }
+]

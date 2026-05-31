@@ -1,0 +1,59 @@
+[
+  {
+    "title": "Verkeersdrukte Oostbuis",
+    "startDate": "2022-10-06T14:47:46.133000+00:00",
+    "statuses": [
+      {
+        "roadStatuses": [
+          {
+            "road": {
+              "name": "westerscheldetunnel-east",
+              "direction": "north"
+            },
+            "states": [
+              {
+                "name": "traffic-queues",
+                "severity": "medium",
+                "priority": 0,
+                "icon": "",
+                "category": "situations"
+              }
+            ],
+            "detours": []
+          },
+          {
+            "road": {
+              "name": "axelsche-gat-to-westerscheldetunnel",
+              "direction": "north"
+            },
+            "states": [
+              {
+                "name": "other",
+                "severity": "medium",
+                "priority": 0,
+                "icon": "",
+                "category": "situations"
+              }
+            ],
+            "detours": []
+          }
+        ],
+        "phase": "active",
+        "additionalInformation": [
+          {
+            "direction": "south",
+            "notify": false
+          },
+          {
+            "direction": "north",
+            "description": "Door files op de ring van Antwerpen is het erg druk.",
+            "notify": true
+          }
+        ]
+      }
+    ],
+    "phase": "active",
+    "scheduled": false,
+    "published": true
+  }
+]

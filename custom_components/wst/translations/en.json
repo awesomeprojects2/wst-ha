@@ -1,0 +1,61 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Westerscheldetunnel Status",
+        "description": "Set up the WST Status Board integration to monitor tunnel status.",
+        "data": {
+          "scan_interval": "Polling interval (seconds)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This integration is already configured.",
+      "cannot_connect": "Cannot connect to the WST Status Board API."
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the WST Status Board API.",
+      "unknown": "An unexpected error occurred."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "WST Options",
+        "data": {
+          "scan_interval": "Polling interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "overall_severity": {
+        "name": "Overall severity"
+      },
+      "active_incidents": {
+        "name": "Active incidents"
+      },
+      "scheduled_incidents": {
+        "name": "Scheduled incidents"
+      },
+      "last_updated": {
+        "name": "Last updated"
+      },
+      "segment_status": {
+        "name": "{road_name} status"
+      },
+      "segment_severity": {
+        "name": "{road_name} severity"
+      }
+    },
+    "binary_sensor": {
+      "segment_closed": {
+        "name": "{road_name} closed"
+      },
+      "active_incident": {
+        "name": "Active incident"
+      }
+    }
+  }
+}

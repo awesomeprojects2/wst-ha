@@ -1,0 +1,90 @@
+{
+  "status": {
+    "toll-square-to-westerscheldetunnel": {
+      "direction": "south",
+      "name": "toll-square-to-westerscheldetunnel",
+      "severity": "none",
+      "states": [],
+      "additionalInformation": []
+    },
+    "westerscheldetunnel-west": {
+      "direction": "south",
+      "name": "westerscheldetunnel-west",
+      "severity": "none",
+      "states": [],
+      "additionalInformation": []
+    },
+    "westerscheldetunnel-to-axelsche-gat": {
+      "direction": "south",
+      "name": "westerscheldetunnel-to-axelsche-gat",
+      "severity": "none",
+      "states": [],
+      "additionalInformation": []
+    },
+    "sluiskiltunnel-south": {
+      "direction": "south",
+      "name": "sluiskiltunnel-south",
+      "severity": "none",
+      "states": [],
+      "additionalInformation": []
+    },
+    "westerscheldetunnel-to-toll-square": {
+      "direction": "north",
+      "name": "westerscheldetunnel-to-toll-square",
+      "severity": "none",
+      "states": [],
+      "additionalInformation": []
+    },
+    "westerscheldetunnel-east": {
+      "direction": "north",
+      "name": "westerscheldetunnel-east",
+      "severity": "medium",
+      "states": [
+        {
+          "name": "traffic-queues",
+          "severity": "medium",
+          "priority": 0,
+          "icon": "image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjwvc3ZnPg==",
+          "category": "situations"
+        }
+      ],
+      "additionalInformation": [
+        {
+          "direction": "north",
+          "description": "Traffic queues on the east tube heading north.",
+          "notify": true
+        }
+      ]
+    },
+    "axelsche-gat-to-westerscheldetunnel": {
+      "direction": "north",
+      "name": "axelsche-gat-to-westerscheldetunnel",
+      "severity": "medium",
+      "states": [
+        {
+          "name": "other",
+          "severity": "medium",
+          "priority": 0,
+          "icon": "image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjwvc3ZnPg==",
+          "category": "situations"
+        }
+      ],
+      "additionalInformation": [
+        {
+          "direction": "north",
+          "description": "Other situation on the approach road.",
+          "notify": true
+        }
+      ]
+    },
+    "sluiskiltunnel-north": {
+      "direction": "north",
+      "name": "sluiskiltunnel-north",
+      "severity": "none",
+      "states": [],
+      "additionalInformation": []
+    }
+  },
+  "severity": "medium",
+  "publishDate": "2022-10-06T14:52:42.868343+00:00"
+}

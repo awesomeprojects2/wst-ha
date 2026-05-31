@@ -1,0 +1,13 @@
+{
+  "domain": "wst",
+  "name": "Westerscheldetunnel",
+  "version": "0.1.0",
+  "config_flow": true,
+  "documentation": "https://github.com/awesomeprojects2/wst-ha",
+  "issue_tracker": "https://github.com/awesomeprojects2/wst-ha/issues",
+  "codeowners": ["@awesomeprojects2"],
+  "requirements": ["wst_api_client>=0.0.1"],
+  "iot_class": "cloud_polling",
+  "loggers": ["wst_api_client"],
+  "homeassistant": "2024.1.0"
+}
