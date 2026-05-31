@@ -1,11 +1,13 @@
 {
   "domain": "wst",
   "name": "Westerscheldetunnel",
-  "codeowners": ["@awesomeprojects2"],
+  "codeowners": [
+    "@awesomeprojects2"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/awesomeprojects2/wst-ha",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/awesomeprojects2/wst-ha/issues",
   "requirements": [],
-  "version": "0.1.0"
+  "version": "0.1.3"
 }
