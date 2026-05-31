@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.core import HomeAssistant
@@ -35,7 +36,7 @@ class WSTRoadSegmentSensorEntityDescription(SensorEntityDescription):
 class WSTOverallSensorEntityDescription(SensorEntityDescription):
     """Describes an overall/system sensor entity."""
 
-    value_fn: Callable[[WSTData], StateType]
+    value_fn: Callable[[WSTData], StateType | datetime]
 
 
 ROAD_SEGMENT_STATUS_SENSORS: tuple[WSTRoadSegmentSensorEntityDescription, ...] = tuple(
@@ -178,7 +179,7 @@ class WSTOverallSensor(WSTEntity, SensorEntity):
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{description.key}"
 
     @property
-    def native_value(self) -> StateType:
+    def native_value(self) -> StateType | datetime:
         """Return the sensor value."""
         if self.coordinator.data is None:
             return None

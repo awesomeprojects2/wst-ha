@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
@@ -34,7 +35,7 @@ class WSTSituation:
 
     segments: dict[str, WSTRoadSegment]
     overall_severity: str
-    publish_date: str | None = None
+    publish_date: datetime | None = None
 
 
 @dataclass

@@ -6,6 +6,8 @@ decoupling HA entities from API client version changes.
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from .const import STATE_PRIORITY, STATE_NORMAL
 from .data import WSTRoadSegment, WSTSituation, WSTIncident
 
@@ -102,10 +104,17 @@ def from_api_situation(raw_situation: object) -> WSTSituation:
             additional_information=_extract_additional_info(raw_additional),
         )
 
+    publish_date_raw = data.get("publishDate")
+    publish_date = None
+    if isinstance(publish_date_raw, datetime):
+        publish_date = publish_date_raw
+    elif isinstance(publish_date_raw, str) and publish_date_raw:
+        publish_date = datetime.fromisoformat(publish_date_raw)
+
     return WSTSituation(
         segments=segments,
         overall_severity=data.get("severity", "none"),
-        publish_date=data.get("publishDate"),
+        publish_date=publish_date,
     )
 
 
