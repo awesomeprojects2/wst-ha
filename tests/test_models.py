@@ -1,5 +1,7 @@
 """Test models data transformation."""
 
+from datetime import datetime, timezone
+
 from custom_components.wst.models import (
     _extract_additional_info,
     _get_primary_state,
@@ -66,7 +68,7 @@ def test_from_api_situation_dict():
     }
     result = from_api_situation(data)
     assert result.overall_severity == "medium"
-    assert result.publish_date == "2022-10-01T18:56:28+00:00"
+    assert result.publish_date == datetime(2022, 10, 1, 18, 56, 28, tzinfo=timezone.utc)
     assert "westerscheldetunnel-east" in result.segments
     seg = result.segments["westerscheldetunnel-east"]
     assert seg.direction == "north"
