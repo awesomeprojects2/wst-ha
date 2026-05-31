@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_SCAN_INTERVAL
@@ -10,7 +12,9 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, ENTRY_UNIQUE_ID, MIN_SCAN_INTERVAL, MAX_SCAN_INTERVAL
-from .api import WSTApiClient
+from .exceptions import WSTApiError
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class WSTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -27,6 +31,7 @@ class WSTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             scan_interval = max(MIN_SCAN_INTERVAL, min(MAX_SCAN_INTERVAL, scan_interval))
 
             try:
+                from .api import WSTApiClient
                 api = WSTApiClient(self.hass)
                 valid = await api.async_validate_connection()
                 if not valid:
@@ -39,7 +44,11 @@ class WSTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         data={},
                         options={CONF_SCAN_INTERVAL: scan_interval},
                     )
-            except Exception:
+            except WSTApiError as err:
+                _LOGGER.error("WST API connection failed during setup: %s", err)
+                errors["base"] = "cannot_connect"
+            except Exception as err:
+                _LOGGER.exception("Unexpected error during WST setup: %s", err)
                 errors["base"] = "cannot_connect"
 
         data_schema = vol.Schema({
