@@ -55,11 +55,13 @@ class WSTApiClient:
     async def _async_get(self, path: str) -> dict | list:
         """Make a GET request to the API and return the JSON response."""
         url = f"{self._base_url}{path}"
-        _LOGGER.debug("Fetching %s", url)
+        _LOGGER.info("Requesting WST API: %s", url)
 
         try:
             session = self._get_session()
+            _LOGGER.debug("Using session: %s", type(session).__name__)
             async with session.get(url, headers={"Accept": "application/json"}, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                _LOGGER.debug("Response status from %s: %s", path, response.status)
                 if response.status == 401:
                     raise WSTApiAuthError(f"Authentication failed (HTTP {response.status})")
                 if response.status == 403:
@@ -74,11 +76,17 @@ class WSTApiClient:
         except WSTApiError:
             raise
         except aiohttp.ClientConnectorError as err:
+            _LOGGER.error("Cannot connect to %s: %s", self._base_url, err)
             raise WSTApiCommunicationError(f"Cannot connect to {self._base_url}: {err}") from err
         except aiohttp.ServerTimeoutError as err:
+            _LOGGER.error("Timeout connecting to %s: %s", url, err)
             raise WSTApiTimeoutError(f"Timeout connecting to {url}: {err}") from err
         except aiohttp.ClientError as err:
+            _LOGGER.error("Client error requesting %s: %s", url, err)
             raise WSTApiCommunicationError(f"Request error: {err}") from err
+        except Exception as err:
+            _LOGGER.exception("Unexpected error requesting %s", url)
+            raise
 
     async def async_validate_connection(self) -> bool:
         """Test the API connection by fetching the situation endpoint."""
