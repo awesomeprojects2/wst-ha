@@ -1,93 +1,61 @@
-"""Sensor platform for the WST integration."""
+"""Sensor platform for the WST integration (new entity design)."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .const import (
-    ALL_ROAD_SEGMENTS,
-    DOMAIN,
-    SEGMENT_TO_DEVICE,
-    STATE_CLOSED,
-    STATE_NORMAL,
-)
+from .const import DOMAIN
 from .coordinator import WSTDataUpdateCoordinator
-from .data import WSTConfigEntry, WSTData, WSTRoadSegment
+from .data import WSTConfigEntry, WSTData, WSTRoadStatus
 from .entity import WSTEntity
-from .models import _get_primary_state
+from .models import get_device_key_for_road, get_road_sensor_id
 
 
 @dataclass(kw_only=True)
-class WSTRoadSegmentSensorEntityDescription(SensorEntityDescription):
-    """Describes a road segment sensor entity."""
+class WSTSystemSensorEntityDescription(SensorEntityDescription):
+    """Describes a system-level sensor entity."""
 
-    road_key: str
-    value_fn: Callable[[WSTRoadSegment], StateType]
-
-
-@dataclass(kw_only=True)
-class WSTOverallSensorEntityDescription(SensorEntityDescription):
-    """Describes an overall/system sensor entity."""
-
-    value_fn: Callable[[WSTData], StateType | datetime]
+    value_fn: Callable[[WSTData], StateType]
+    attr_fn: Callable[[WSTData], dict[str, object]] | None = None
 
 
-ROAD_SEGMENT_STATUS_SENSORS: tuple[WSTRoadSegmentSensorEntityDescription, ...] = tuple(
-    WSTRoadSegmentSensorEntityDescription(
-        key=f"{road_key}_status",
-        road_key=road_key,
-        icon="mdi:road-variant",
-        translation_key="segment_status",
-        translation_placeholders={"road_name": road_key.replace("-", " ").title()},
-        value_fn=lambda segment: _get_primary_state(segment.states) if segment else STATE_NORMAL,
-    )
-    for road_key in ALL_ROAD_SEGMENTS
-)
-
-ROAD_SEGMENT_SEVERITY_SENSORS: tuple[WSTRoadSegmentSensorEntityDescription, ...] = tuple(
-    WSTRoadSegmentSensorEntityDescription(
-        key=f"{road_key}_severity",
-        road_key=road_key,
-        icon="mdi:alert-circle-outline",
-        translation_key="segment_severity",
-        translation_placeholders={"road_name": road_key.replace("-", " ").title()},
-        value_fn=lambda segment: segment.severity if segment else "none",
-    )
-    for road_key in ALL_ROAD_SEGMENTS
-)
-
-OVERALL_SENSORS: tuple[WSTOverallSensorEntityDescription, ...] = (
-    WSTOverallSensorEntityDescription(
-        key="overall_severity",
-        icon="mdi:alert",
-        translation_key="overall_severity",
-        value_fn=lambda data: data.situation.overall_severity,
+SYSTEM_SENSORS: tuple[WSTSystemSensorEntityDescription, ...] = (
+    WSTSystemSensorEntityDescription(
+        key="condition",
+        icon="mdi:traffic-light",
+        translation_key="condition",
+        value_fn=lambda data: data.situation.condition.lower() if data else "open",
+        attr_fn=None,
     ),
-    WSTOverallSensorEntityDescription(
+    WSTSystemSensorEntityDescription(
         key="active_incidents",
         icon="mdi:alert-decagram",
         translation_key="active_incidents",
-        value_fn=lambda data: len(data.active_incidents),
+        value_fn=lambda data: len(data.active_incidents) if data else 0,
+        attr_fn=lambda data: {
+            "incidents": [
+                {"name": i.name, "description": i.description, "start_date": i.start_date}
+                for i in data.active_incidents
+            ] if data else [],
+        },
     ),
-    WSTOverallSensorEntityDescription(
+    WSTSystemSensorEntityDescription(
         key="scheduled_incidents",
         icon="mdi:calendar-clock",
         translation_key="scheduled_incidents",
-        value_fn=lambda data: len(data.scheduled_incidents),
-    ),
-    WSTOverallSensorEntityDescription(
-        key="last_updated",
-        icon="mdi:clock-outline",
-        device_class="timestamp",
-        translation_key="last_updated",
-        value_fn=lambda data: data.situation.publish_date,
+        value_fn=lambda data: len(data.scheduled_incidents) if data else 0,
+        attr_fn=lambda data: {
+            "incidents": [
+                {"name": i.name, "description": i.description, "start_date": i.start_date, "end_date": i.end_date}
+                for i in data.scheduled_incidents
+            ] if data else [],
+        },
     ),
 )
 
@@ -100,86 +68,172 @@ async def async_setup_entry(
     """Set up WST sensor entities from a config entry."""
     coordinator: WSTDataUpdateCoordinator = entry.runtime_data
 
-    entities: list[WSTRoadSegmentSensor | WSTOverallSensor] = []
+    entities: list[WSTSensor] = []
 
-    for description in ROAD_SEGMENT_STATUS_SENSORS:
-        entities.append(WSTRoadSegmentSensor(coordinator, description))
-
-    for description in ROAD_SEGMENT_SEVERITY_SENSORS:
-        entities.append(WSTRoadSegmentSensor(coordinator, description))
-
-    for description in OVERALL_SENSORS:
-        entities.append(WSTOverallSensor(coordinator, description))
+    for description in SYSTEM_SENSORS:
+        entities.append(WSTSystemSensor(coordinator, description))
 
     async_add_entities(entities)
 
+    async def _async_update_road_sensors():
+        """Add road condition sensors dynamically based on API data."""
+        if coordinator.data is None:
+            return
 
-class WSTRoadSegmentSensor(WSTEntity, SensorEntity):
-    """Sensor for a road segment's status or severity."""
+        new_entities: list[WSTSensor] = []
+        existing_ids = coordinator._road_sensor_ids
 
-    entity_description: WSTRoadSegmentSensorEntityDescription
+        situation = coordinator.data.situation
+        for road_status in situation.road_statuses:
+            unique_id = get_road_sensor_id(road_status, entry.entry_id)
+            if unique_id in existing_ids:
+                continue
+
+            description = WSTRoadSensorEntityDescription(
+                key=unique_id,
+                road_id=road_status.road.id,
+                road_name=road_status.road.name,
+                direction=road_status.road.direction,
+                translation_key="road_condition",
+                translation_placeholders={"road_name": road_status.road.name},
+                value_fn=lambda rs: rs.road_condition.lower() if rs else "open",
+            )
+            coordinator._road_sensor_ids.add(unique_id)
+            new_entities.append(WSTRoadSensor(coordinator, description))
+
+        if new_entities:
+            async_add_entities(new_entities)
+
+    coordinator.async_add_listener(_async_update_road_sensors)
+
+    if coordinator.data is not None:
+        await _async_update_road_sensors()
+
+
+class WSTSensor(WSTEntity, SensorEntity):
+    """Base sensor for WST entities."""
+
+    entity_description: SensorEntityDescription
+
+    @property
+    def available(self) -> bool:
+        """Return True if coordinator data is available."""
+        return self.coordinator.last_update_success and self.coordinator.data is not None
+
+
+@dataclass(kw_only=True)
+class WSTRoadSensorEntityDescription(SensorEntityDescription):
+    """Describes a road condition sensor entity."""
+
+    road_id: str
+    road_name: str
+    direction: str
+    value_fn: Callable[[WSTRoadStatus], StateType]
+
+
+class WSTRoadSensor(WSTSensor):
+    """Sensor for a road's condition (OPEN/CLOSED)."""
+
+    entity_description: WSTRoadSensorEntityDescription
 
     def __init__(
         self,
         coordinator: WSTDataUpdateCoordinator,
-        description: WSTRoadSegmentSensorEntityDescription,
+        description: WSTRoadSensorEntityDescription,
     ) -> None:
-        super().__init__(coordinator, road_key=description.road_key)
+        device_key = get_device_key_for_road(description.road_name)
+        super().__init__(coordinator, device_key=device_key)
         self.entity_description = description
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{description.key}"
+        self._attr_unique_id = description.key
 
     @property
     def native_value(self) -> StateType:
         """Return the sensor value."""
-        segment = self._get_segment()
-        if segment is None:
+        road_status = self._get_road_status()
+        if road_status is None:
             return None
-        return self.entity_description.value_fn(segment)
+        return self.entity_description.value_fn(road_status)
 
     @property
     def extra_state_attributes(self) -> dict[str, object]:
-        """Return extra state attributes for road segment sensors."""
-        segment = self._get_segment()
-        if segment is None:
+        """Return extra state attributes."""
+        road_status = self._get_road_status()
+        if road_status is None:
             return {}
 
         attrs: dict[str, object] = {
-            "direction": segment.direction,
+            "direction": road_status.road.direction,
         }
 
-        if self.entity_description.key.endswith("_status"):
-            attrs["severity"] = segment.severity
-            attrs["states"] = segment.states
-            attrs["additional_information"] = [
-                {k: v for k, v in info.items() if k != "notify"}
-                for info in segment.additional_information
-            ]
+        if road_status.deviations:
+            deviation_info = []
+            for d in road_status.deviations:
+                deviation_info.append({"code": d.code, "name": d.name})
+            attrs["deviation"] = deviation_info
+
+        incident_desc = self._get_incident_description(road_status)
+        if incident_desc:
+            attrs["description"] = incident_desc
+
+        travel_time = self._get_travel_time(road_status)
+        if travel_time:
+            attrs["extra_travel_time"] = travel_time
 
         return attrs
 
-    def _get_segment(self) -> WSTRoadSegment | None:
-        """Get the road segment data for this sensor."""
+    def _get_road_status(self) -> WSTRoadStatus | None:
+        """Get the road status data for this sensor."""
         if self.coordinator.data is None:
             return None
-        return self.coordinator.data.situation.segments.get(self.entity_description.road_key)
+
+        for rs in self.coordinator.data.situation.road_statuses:
+            if rs.road.id == self.entity_description.road_id:
+                return rs
+        return None
+
+    def _get_incident_description(self, road_status: WSTRoadStatus) -> str | None:
+        """Get description from active incidents affecting this road."""
+        if self.coordinator.data is None:
+            return None
+
+        for incident in self.coordinator.data.active_incidents:
+            for status in incident.statuses:
+                for rs in status.road_statuses:
+                    if rs.road.id == road_status.road.id:
+                        if status.description:
+                            return status.description
+        return None
+
+    def _get_travel_time(self, road_status: WSTRoadStatus) -> str | None:
+        """Get extra travel time from active incidents affecting this road."""
+        if self.coordinator.data is None:
+            return None
+
+        for incident in self.coordinator.data.active_incidents:
+            for status in incident.statuses:
+                for rs in status.road_statuses:
+                    if rs.road.id == road_status.road.id:
+                        if status.additional_travel_time and status.additional_travel_time.text:
+                            return status.additional_travel_time.text
+        return None
 
 
-class WSTOverallSensor(WSTEntity, SensorEntity):
+class WSTSystemSensor(WSTSensor):
     """Sensor for overall/system-level WST data."""
 
-    entity_description: WSTOverallSensorEntityDescription
+    entity_description: WSTSystemSensorEntityDescription
 
     def __init__(
         self,
         coordinator: WSTDataUpdateCoordinator,
-        description: WSTOverallSensorEntityDescription,
+        description: WSTSystemSensorEntityDescription,
     ) -> None:
         super().__init__(coordinator, device_key="wst_status_board")
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{description.key}"
 
     @property
-    def native_value(self) -> StateType | datetime:
+    def native_value(self) -> StateType:
         """Return the sensor value."""
         if self.coordinator.data is None:
             return None
@@ -187,23 +241,11 @@ class WSTOverallSensor(WSTEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, object]:
-        """Return extra state attributes for overall sensors."""
-        data = self.coordinator.data
-        if data is None:
+        """Return extra state attributes for system sensors."""
+        if self.coordinator.data is None:
             return {}
 
-        key = self.entity_description.key
-
-        if key == "active_incidents":
-            return {
-                "incident_titles": [i.title for i in data.active_incidents],
-                "incident_start_dates": [i.start_date for i in data.active_incidents if i.start_date],
-            }
-
-        if key == "scheduled_incidents":
-            return {
-                "incident_titles": [i.title for i in data.scheduled_incidents],
-                "incident_start_dates": [i.start_date for i in data.scheduled_incidents if i.start_date],
-            }
-
+        attr_fn = self.entity_description.attr_fn
+        if attr_fn:
+            return attr_fn(self.coordinator.data)
         return {}

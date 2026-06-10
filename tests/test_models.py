@@ -1,113 +1,145 @@
-"""Test models data transformation."""
-
-from datetime import datetime, timezone
+"""Test models data transformation (new API format)."""
 
 from custom_components.wst.models import (
-    _extract_additional_info,
-    _get_primary_state,
-    from_api_incident,
     from_api_situation,
+    from_api_incidents,
+    to_wst_data,
+    get_road_slug,
+    get_device_key_for_road,
 )
-from custom_components.wst.const import STATE_CLOSED, STATE_NORMAL, STATE_TRAFFIC_QUEUES
+from custom_components.wst.const import CONDITION_OPEN, CONDITION_CLOSED
 
 
-def test_get_primary_state_empty():
-    assert _get_primary_state([]) == STATE_NORMAL
-
-
-def test_get_primary_state_single():
-    states = [{"name": "traffic-queues", "severity": "medium"}]
-    assert _get_primary_state(states) == STATE_TRAFFIC_QUEUES
-
-
-def test_get_primary_state_priority():
-    states = [
-        {"name": "other", "severity": "medium"},
-        {"name": "closed", "severity": "high"},
-    ]
-    assert _get_primary_state(states) == STATE_CLOSED
-
-
-def test_get_primary_state_unknown_state():
-    states = [{"name": "unknown-state", "severity": "low"}]
-    assert _get_primary_state(states) == "unknown-state"
-
-
-def test_extract_additional_info_empty():
-    assert _extract_additional_info(None) == []
-    assert _extract_additional_info([]) == []
-
-
-def test_extract_additional_info_with_data():
-    info = [
-        {"direction": "north", "description": "Traffic delays.", "notify": True},
-        {"direction": "south", "notify": False},
-    ]
-    result = _extract_additional_info(info)
-    assert len(result) == 2
-    assert result[0]["direction"] == "north"
-    assert result[0]["description"] == "Traffic delays."
-    assert result[0]["notify"] is True
-    assert result[1]["direction"] == "south"
-    assert result[1]["notify"] is False
-
-
-def test_from_api_situation_dict():
+def test_from_api_situation():
+    """Test parsing a situation response."""
     data = {
-        "status": {
-            "westerscheldetunnel-east": {
-                "direction": "north",
-                "name": "westerscheldetunnel-east",
-                "severity": "medium",
-                "states": [{"name": "traffic-queues", "severity": "medium", "priority": 0}],
-                "additionalInformation": [{"direction": "north", "description": "Queues.", "notify": True}],
-            }
-        },
-        "severity": "medium",
-        "publishDate": "2022-10-01T18:56:28+00:00",
-    }
-    result = from_api_situation(data)
-    assert result.overall_severity == "medium"
-    assert result.publish_date == datetime(2022, 10, 1, 18, 56, 28, tzinfo=timezone.utc)
-    assert "westerscheldetunnel-east" in result.segments
-    seg = result.segments["westerscheldetunnel-east"]
-    assert seg.direction == "north"
-    assert seg.severity == "medium"
-    assert "traffic-queues" in seg.states
-
-
-def test_from_api_situation_empty_status():
-    data = {"status": None, "severity": "none", "publishDate": None}
-    result = from_api_situation(data)
-    assert result.overall_severity == "none"
-    assert len(result.segments) == 0
-
-
-def test_from_api_incident_dict():
-    data = {
-        "title": "Traffic incident",
-        "startDate": "2022-10-06T14:47:46+00:00",
-        "phase": "active",
-        "scheduled": False,
-        "published": True,
-        "statuses": [
+        "condition": "OPEN",
+        "roadStatuses": [
             {
-                "roadStatuses": [
+                "id": "status-1",
+                "road": {
+                    "id": "8ac445f0-bc74-4789-a994-5b3be105b5b3",
+                    "name": "Westbuis richting Zuid",
+                    "direction": "SOUTH"
+                },
+                "roadCondition": "OPEN",
+                "deviations": []
+            },
+            {
+                "id": "status-2",
+                "road": {
+                    "id": "b6e3aeeb-42e3-43ba-8be1-0366fe51b1b8",
+                    "name": "Zuidbuis richting Zuid",
+                    "direction": "SOUTH"
+                },
+                "roadCondition": "CLOSED",
+                "deviations": [
+                    {"id": "dev-1", "code": "U65", "name": "Richting Oostburg/Borssele"}
+                ]
+            }
+        ]
+    }
+
+    result = from_api_situation(data)
+
+    assert result.condition == CONDITION_OPEN
+    assert len(result.road_statuses) == 2
+
+    assert result.road_statuses[0].road_condition == CONDITION_OPEN
+    assert result.road_statuses[0].road.name == "Westbuis richting Zuid"
+    assert result.road_statuses[0].road.direction == "SOUTH"
+
+    assert result.road_statuses[1].road_condition == CONDITION_CLOSED
+    assert len(result.road_statuses[1].deviations) == 1
+    assert result.road_statuses[1].deviations[0].code == "U65"
+
+
+def test_from_api_incidents():
+    """Test parsing incidents response."""
+    data = {
+        "items": [
+            {
+                "id": "incident-1",
+                "name": "Test incident",
+                "description": "Test description",
+                "phase": "ACTIVE",
+                "startDate": "2026-06-10T17:00:00+00:00",
+                "endDate": "2026-06-11T03:00:00+00:00",
+                "notify": True,
+                "statuses": [
                     {
-                        "road": {"name": "westerscheldetunnel-east", "direction": "north"},
-                        "states": [{"name": "traffic-queues", "severity": "medium"}],
+                        "id": "status-1",
+                        "name": "Afgesloten",
+                        "description": "Road is closed",
+                        "phase": "ACTIVE",
+                        "startOffset": 0,
+                        "roadStatuses": [
+                            {
+                                "id": "rs-1",
+                                "road": {
+                                    "id": "fc304bb7-3c57-4dd0-961f-0106f648156d",
+                                    "name": "Noordbuis richting Westerscheldetunnel",
+                                    "direction": "NORTH"
+                                },
+                                "roadCondition": "CLOSED",
+                                "deviations": []
+                            }
+                        ],
+                        "additionalTravelTime": {
+                            "id": "tt-1",
+                            "travelTimeOption": None,
+                            "text": "Enkele minuten"
+                        },
+                        "step": None,
+                        "activatedAt": "2026-06-10T17:00:02+00:00"
                     }
                 ],
-                "phase": "active",
-                "additionalInformation": [
-                    {"direction": "north", "description": "Heavy traffic.", "notify": True}
-                ],
+                "scenario": None,
+                "expiredAt": None
             }
-        ],
+        ]
     }
-    result = from_api_incident(data)
-    assert result.title == "Traffic incident"
-    assert result.phase == "active"
-    assert result.scheduled is False
-    assert "westerscheldetunnel-east" in result.road_names
-    assert "Heavy traffic." in result.descriptions
+
+    result = from_api_incidents(data)
+
+    assert len(result) == 1
+    incident = result[0]
+    assert incident.id == "incident-1"
+    assert incident.name == "Test incident"
+    assert incident.phase == "active"
+    assert incident.notify is True
+    assert len(incident.statuses) == 1
+
+    status = incident.statuses[0]
+    assert status.name == "Afgesloten"
+    assert status.road_statuses[0].road_condition == CONDITION_CLOSED
+    assert status.additional_travel_time.text == "Enkele minuten"
+
+
+def test_to_wst_data():
+    """Test building WSTData from raw API responses."""
+    situation = {
+        "condition": "OPEN",
+        "roadStatuses": []
+    }
+    active_incidents = {"items": []}
+    scheduled_incidents = {"items": []}
+
+    result = to_wst_data(situation, active_incidents, scheduled_incidents)
+
+    assert result.situation.condition == CONDITION_OPEN
+    assert len(result.active_incidents) == 0
+    assert len(result.scheduled_incidents) == 0
+
+
+def test_road_id_to_slug():
+    """Test road ID to slug mapping."""
+    assert get_road_slug("8ac445f0-bc74-4789-a994-5b3be105b5b3", "Westbuis") == "westbuis_zuid"
+    assert get_road_slug("unknown-id", "Some Road Name") == "some_road_name"
+
+
+def test_device_key_for_road():
+    """Test device key determination based on road name."""
+    assert get_device_key_for_road("Westbuis richting Zuid") == "westerscheldetunnel"
+    assert get_device_key_for_road("Sluiskil WST richting Noord") == "sluiskiltunnel"
+    assert get_device_key_for_road("Noordbuis richting Westerscheldetunnel") == "westerscheldetunnel"

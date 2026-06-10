@@ -5,54 +5,22 @@ DOMAIN = "wst"
 CONF_SCAN_INTERVAL = "scan_interval"
 
 DEFAULT_SCAN_INTERVAL = 300  # 5 minutes
-MIN_SCAN_INTERVAL = 30  # 30 seconds minimum to prevent API abuse
+MIN_SCAN_INTERVAL = 300  # 5 minutes minimum to prevent API abuse
 MAX_SCAN_INTERVAL = 3600  # 1 hour maximum
 
-# API base URL
-API_BASE_URL = "https://api.wststatusboard.nl"
+# API base URL (new API)
+API_BASE_URL = "https://api.verkeer.westerscheldetunnel.nl"
 
-# Road segment keys (matching API response keys)
-ROAD_TOLL_SQUARE_TO_WST = "toll-square-to-westerscheldetunnel"
-ROAD_WST_WEST = "westerscheldetunnel-west"
-ROAD_WST_TO_AXELSCHE_GAT = "westerscheldetunnel-to-axelsche-gat"
-ROAD_SLUISKIL_SOUTH = "sluiskiltunnel-south"
-ROAD_WST_TO_TOLL_SQUARE = "westerscheldetunnel-to-toll-square"
-ROAD_WST_EAST = "westerscheldetunnel-east"
-ROAD_AXELSCHE_GAT_TO_WST = "axelsche-gat-to-westerscheldetunnel"
-ROAD_SLUISKIL_NORTH = "sluiskiltunnel-north"
-
-# All road segments
-ALL_ROAD_SEGMENTS: list[str] = [
-    ROAD_TOLL_SQUARE_TO_WST,
-    ROAD_WST_WEST,
-    ROAD_WST_TO_AXELSCHE_GAT,
-    ROAD_SLUISKIL_SOUTH,
-    ROAD_WST_TO_TOLL_SQUARE,
-    ROAD_WST_EAST,
-    ROAD_AXELSCHE_GAT_TO_WST,
-    ROAD_SLUISKIL_NORTH,
-]
-
-# Segments belonging to Westerscheldetunnel device
-WESTERSCHELDE_SEGMENTS: list[str] = [
-    ROAD_TOLL_SQUARE_TO_WST,
-    ROAD_WST_WEST,
-    ROAD_WST_TO_AXELSCHE_GAT,
-    ROAD_WST_TO_TOLL_SQUARE,
-    ROAD_WST_EAST,
-    ROAD_AXELSCHE_GAT_TO_WST,
-]
-
-# Segments belonging to Sluiskiltunnel device
-SLUISKIL_SEGMENTS: list[str] = [
-    ROAD_SLUISKIL_SOUTH,
-    ROAD_SLUISKIL_NORTH,
-]
-
-# Map road segment key → device key
-SEGMENT_TO_DEVICE: dict[str, str] = {
-    **{s: "westerscheldetunnel" for s in WESTERSCHELDE_SEGMENTS},
-    **{s: "sluiskiltunnel" for s in SLUISKIL_SEGMENTS},
+# Road UUID to slug mapping for stable unique IDs
+ROAD_ID_TO_SLUG: dict[str, str] = {
+    "8ac445f0-bc74-4789-a994-5b3be105b5b3": "westbuis_zuid",
+    "dcc1c0df-6461-468b-84e0-1124fb689477": "oostbuis_noord",
+    "b6e3aeeb-42e3-43ba-8be1-0366fe51b1b8": "zuidbuis_zuid",
+    "fc304bb7-3c57-4dd0-961f-0106f648156d": "noordbuis_noord",
+    "4789380f-418c-4cf0-b947-8bb8b1717d8c": "tolplein_wst_zuid",
+    "fc4086fe-acd0-403c-8fe4-07176937a355": "wst_tolplein_noord",
+    "331646fc-ea99-48a8-aeee-5bbb6975ed6a": "sluiskil_wst_noord",
+    "dab49083-3f4a-4f21-bef4-57243140ea66": "wst_sluiskil_zuid",
 }
 
 # Device identifiers and names
@@ -74,76 +42,34 @@ DEVICE_INFO: dict[str, dict[str, str]] = {
     },
 }
 
-# Known severity levels from the API
-SEVERITY_NONE = "none"
-SEVERITY_LOW = "low"
-SEVERITY_MEDIUM = "medium"
-SEVERITY_HIGH = "high"
-SEVERITY_CRITICAL = "critical"
+# Known road condition values
+CONDITION_OPEN = "open"
+CONDITION_CLOSED = "closed"
 
-SEVERITY_LEVELS: list[str] = [
-    SEVERITY_NONE,
-    SEVERITY_LOW,
-    SEVERITY_MEDIUM,
-    SEVERITY_HIGH,
-    SEVERITY_CRITICAL,
-]
-
-# Known state names from the API (used for status sensors and binary sensors)
-STATE_CLOSED = "closed"
-STATE_DETOUR = "detour"
-STATE_TWO_WAY_TRAFFIC = "two-way-traffic"
-STATE_SINGLE_LANE = "single-lane"
-STATE_TRAFFIC_QUEUES = "traffic-queues"
-STATE_METERING_LIGHT = "metering-light"
-STATE_ROADWORKS = "roadworks"
-STATE_MAXIMUM_WIDTH = "maximum-width"
-STATE_MAXIMUM_WIDTH_300 = "maximum-width-300"
-STATE_MAXIMUM_WIDTH_200 = "maximum-width-200"
-STATE_SPEED_LIMIT_30 = "speed-limit-30"
-STATE_SPEED_LIMIT_50 = "speed-limit-50"
-STATE_SPEED_LIMIT_70 = "speed-limit-70"
-STATE_SPEED_LIMIT_80 = "speed-limit-80"
-STATE_FOG_LIKELY = "fog-likely"
-STATE_SLIPPERY_ROAD = "slippery-road-surface"
-STATE_SNOW_OR_ICE = "snow-or-ice"
-STATE_OTHER = "other"
-
-# State priority: higher index = lower concern. First match when iterating = most concerning.
-STATE_PRIORITY: list[str] = [
-    STATE_CLOSED,
-    STATE_DETOUR,
-    STATE_TWO_WAY_TRAFFIC,
-    STATE_SINGLE_LANE,
-    STATE_TRAFFIC_QUEUES,
-    STATE_METERING_LIGHT,
-    STATE_ROADWORKS,
-    STATE_MAXIMUM_WIDTH,
-    STATE_MAXIMUM_WIDTH_300,
-    STATE_MAXIMUM_WIDTH_200,
-    STATE_SPEED_LIMIT_30,
-    STATE_SPEED_LIMIT_50,
-    STATE_SPEED_LIMIT_70,
-    STATE_SPEED_LIMIT_80,
-    STATE_FOG_LIKELY,
-    STATE_SLIPPERY_ROAD,
-    STATE_SNOW_OR_ICE,
-    STATE_OTHER,
-]
-
-# Default status when no states are active
-STATE_NORMAL = "normal"
-
-# Known direction values
-DIRECTION_NORTH = "north"
-DIRECTION_SOUTH = "south"
-
-# Incident phases
-PHASE_ACTIVE = "active"
-PHASE_EXPIRED = "expired"
+# Known direction values (API uses UPPERCASE)
+DIRECTION_NORTH = "NORTH"
+DIRECTION_SOUTH = "SOUTH"
 
 # Platforms
 PLATFORMS = ["sensor", "binary_sensor"]
 
 # Unique ID for config entry
 ENTRY_UNIQUE_ID = "wst_status_board"
+
+
+def get_road_slug(road_id: str, road_name: str) -> str:
+    """Get a stable slug for a road based on UUID or name."""
+    if road_id in ROAD_ID_TO_SLUG:
+        return ROAD_ID_TO_SLUG[road_id]
+
+    slug = road_name.lower().replace(" ", "_").replace("-", "_")
+    if " richting " in slug:
+        slug = slug.split(" richting ")[0]
+    return slug
+
+
+def get_device_for_road(road_name: str) -> str:
+    """Determine which device a road belongs to based on road name."""
+    if "Sluiskil" in road_name or "sluiskil" in road_name.lower():
+        return "sluiskiltunnel"
+    return "westerscheldetunnel"

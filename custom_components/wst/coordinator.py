@@ -14,9 +14,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import WSTApiClient
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
-from .data import WSTData, WSTSituation, WSTIncident
+from .data import WSTData
 from .exceptions import WSTApiAuthError, WSTApiError
-from .models import from_api_incident, from_api_situation
+from .models import to_wst_data
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,6 +43,7 @@ class WSTDataUpdateCoordinator(DataUpdateCoordinator[WSTData]):
             always_update=False,
         )
         self.api = api
+        self._road_sensor_ids: set = set()
 
     async def _async_update_data(self) -> WSTData:
         """Fetch data from all WST API endpoints in parallel."""
@@ -59,12 +60,4 @@ class WSTDataUpdateCoordinator(DataUpdateCoordinator[WSTData]):
         except WSTApiError as err:
             raise UpdateFailed(f"Error fetching WST data: {err}") from err
 
-        situation = from_api_situation(situation_raw)
-        active_incidents = [from_api_incident(i) for i in (active_raw if isinstance(active_raw, list) else [])]
-        scheduled_incidents = [from_api_incident(i) for i in (scheduled_raw if isinstance(scheduled_raw, list) else [])]
-
-        return WSTData(
-            situation=situation,
-            active_incidents=active_incidents,
-            scheduled_incidents=scheduled_incidents,
-        )
+        return to_wst_data(situation_raw, active_raw, scheduled_raw)

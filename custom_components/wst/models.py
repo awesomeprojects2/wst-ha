@@ -1,181 +1,148 @@
-"""Data transformation: API models → internal WST models.
-
-Translates the openapi-generator client models into stable internal dataclasses,
-decoupling HA entities from API client version changes.
-"""
+"""Data transformation: API models -> internal WST models."""
 
 from __future__ import annotations
 
-from datetime import datetime
-
-from .const import STATE_PRIORITY, STATE_NORMAL
-from .data import WSTRoadSegment, WSTSituation, WSTIncident
-
-
-def _get_primary_state(states: list[dict[str, str]]) -> str:
-    """Return the most concerning state from a list of state dicts, or STATE_NORMAL if empty.
-
-    States are prioritized by STATE_PRIORITY order - first match wins.
-    """
-    if not states:
-        return STATE_NORMAL
-
-    state_names = {s.get("name", "") for s in states if isinstance(s, dict)}
-
-    for priority_state in STATE_PRIORITY:
-        if priority_state in state_names:
-            return priority_state
-
-    # Fallback: return first state name if no known priority matches
-    for s in states:
-        name = s.get("name", "")
-        if name:
-            return name
-
-    return STATE_NORMAL
+from .const import get_device_for_road, get_road_slug
+from .data import (
+    WSTData,
+    WSTDeviation,
+    WSTIncident,
+    WSTIncidentStatus,
+    WSTRoad,
+    WSTRoadStatus,
+    WSTSituation,
+    WSTTravelTime,
+)
 
 
-def _extract_additional_info(additional_info: list | None) -> list[dict[str, str | bool]]:
-    """Extract additional information from API response, normalizing to internal format."""
-    if not additional_info:
-        return []
-
-    result = []
-    for info in additional_info:
-        if not isinstance(info, dict):
-            continue
-        entry: dict[str, str | bool] = {
-            "direction": info.get("direction", ""),
-            "notify": bool(info.get("notify", False)),
-        }
-        if "description" in info:
-            entry["description"] = str(info["description"])
-        result.append(entry)
-    return result
+def _parse_deviation(data: dict) -> WSTDeviation:
+    """Parse a deviation from API data."""
+    return WSTDeviation(
+        id=data.get("id", ""),
+        code=data.get("code", ""),
+        name=data.get("name", ""),
+    )
 
 
-def from_api_situation(raw_situation: object) -> WSTSituation:
-    """Convert a raw API situation response into a WSTSituation model.
+def _parse_road(data: dict) -> WSTRoad:
+    """Parse a road from API data."""
+    return WSTRoad(
+        id=data.get("id", ""),
+        name=data.get("name", ""),
+        direction=data.get("direction", ""),
+    )
 
-    The raw_situation parameter can be:
-    - A generated client model object (with .status, .severity, .publish_date attributes)
-    - A dict from the API response
-    """
-    if isinstance(raw_situation, dict):
-        data = raw_situation
-    else:
-        try:
-            data = raw_situation.to_dict()
-        except AttributeError:
-            data = vars(raw_situation)
 
-    status_data = data.get("status", {})
-    if status_data is None:
-        status_data = {}
+def _parse_road_status(data: dict) -> WSTRoadStatus:
+    """Parse a road status from API data."""
+    road_data = data.get("road", {}) or {}
+    deviations_data = data.get("deviations", []) or []
 
-    segments: dict[str, WSTRoadSegment] = {}
-    for segment_key, segment_value in status_data.items():
-        if segment_value is None:
-            continue
+    return WSTRoadStatus(
+        id=data.get("id", ""),
+        road=_parse_road(road_data),
+        road_condition=data.get("roadCondition", "OPEN").lower(),
+        deviations=[_parse_deviation(d) for d in deviations_data],
+    )
 
-        if isinstance(segment_value, dict):
-            seg_dict = segment_value
-        else:
-            try:
-                seg_dict = segment_value.to_dict()
-            except AttributeError:
-                seg_dict = vars(segment_value)
 
-        raw_states = seg_dict.get("states", []) or []
-        if isinstance(raw_states, (list, tuple)):
-            states_list = [s if isinstance(s, dict) else (s.to_dict() if hasattr(s, "to_dict") else vars(s)) for s in raw_states]
-        else:
-            states_list = []
+def _parse_travel_time(data: dict | None) -> WSTTravelTime | None:
+    """Parse travel time from API data."""
+    if not data:
+        return None
+    return WSTTravelTime(
+        id=data.get("id", ""),
+        travel_time_option=data.get("travelTimeOption"),
+        text=data.get("text"),
+    )
 
-        state_names = [s.get("name", "") if isinstance(s, dict) else getattr(s, "name", "") for s in states_list if s]
 
-        raw_additional = seg_dict.get("additionalInformation", seg_dict.get("additional_information", [])) or []
+def _parse_incident_status(data: dict) -> WSTIncidentStatus:
+    """Parse an incident status from API data."""
+    road_statuses_data = data.get("roadStatuses", []) or []
 
-        segments[segment_key] = WSTRoadSegment(
-            name=seg_dict.get("name", segment_key),
-            direction=seg_dict.get("direction", ""),
-            severity=seg_dict.get("severity", "none"),
-            states=state_names,
-            additional_information=_extract_additional_info(raw_additional),
-        )
+    phase_raw = data.get("phase", "")
+    return WSTIncidentStatus(
+        id=data.get("id", ""),
+        name=data.get("name", ""),
+        description=data.get("description"),
+        phase=phase_raw.lower() if phase_raw else "",
+        start_offset=data.get("startOffset", 0),
+        road_statuses=[_parse_road_status(rs) for rs in road_statuses_data],
+        additional_travel_time=_parse_travel_time(data.get("additionalTravelTime")),
+        step=data.get("step"),
+        activated_at=data.get("activatedAt"),
+    )
 
-    publish_date_raw = data.get("publishDate")
-    publish_date = None
-    if isinstance(publish_date_raw, datetime):
-        publish_date = publish_date_raw
-    elif isinstance(publish_date_raw, str) and publish_date_raw:
-        publish_date = datetime.fromisoformat(publish_date_raw)
+
+def _parse_incident(data: dict) -> WSTIncident:
+    """Parse an incident from API data."""
+    statuses_data = data.get("statuses", []) or []
+
+    phase_raw = data.get("phase", "")
+    return WSTIncident(
+        id=data.get("id", ""),
+        name=data.get("name", ""),
+        description=data.get("description"),
+        phase=phase_raw.lower() if phase_raw else "",
+        start_date=data.get("startDate"),
+        end_date=data.get("endDate"),
+        notify=bool(data.get("notify", False)),
+        statuses=[_parse_incident_status(s) for s in statuses_data],
+        scenario=data.get("scenario"),
+        expired_at=data.get("expiredAt"),
+    )
+
+
+def from_api_situation(raw_situation: dict) -> WSTSituation:
+    """Convert a raw API situation response into a WSTSituation model."""
+    road_statuses_data = raw_situation.get("roadStatuses", []) or []
 
     return WSTSituation(
-        segments=segments,
-        overall_severity=data.get("severity", "none"),
-        publish_date=publish_date,
+        condition=raw_situation.get("condition", "OPEN").lower(),
+        road_statuses=[_parse_road_status(rs) for rs in road_statuses_data],
     )
 
 
-def from_api_incident(raw_incident: object) -> WSTIncident:
-    """Convert a raw API incident response into a WSTIncident model.
+def from_api_incidents(raw_response: dict) -> list[WSTIncident]:
+    """Convert a raw API incidents response into a list of WSTIncident models."""
+    items = raw_response.get("items", []) or []
+    return [_parse_incident(item) for item in items]
 
-    The raw_incident parameter can be:
-    - A generated client model object
-    - A dict from the API response
-    """
-    if isinstance(raw_incident, dict):
-        data = raw_incident
-    else:
-        try:
-            data = raw_incident.to_dict()
-        except AttributeError:
-            data = vars(raw_incident)
 
-    road_names: list[str] = []
-    descriptions: list[str] = []
+def from_api_situation_dict(raw: dict) -> WSTSituation:
+    """Convert a raw API situation dict into a WSTSituation model."""
+    return from_api_situation(raw)
 
-    statuses = data.get("statuses", []) or []
-    for status in statuses:
-        if not isinstance(status, dict):
-            try:
-                status = status.to_dict()
-            except AttributeError:
-                status = vars(status)
 
-        for road_status in (status.get("roadStatuses", []) or []):
-            if not isinstance(road_status, dict):
-                try:
-                    road_status = road_status.to_dict()
-                except AttributeError:
-                    road_status = vars(road_status)
-            road = road_status.get("road", {}) or {}
-            if not isinstance(road, dict):
-                try:
-                    road = road.to_dict()
-                except AttributeError:
-                    road = vars(road)
-            road_name = road.get("name", "")
-            if road_name and road_name not in road_names:
-                road_names.append(road_name)
+def from_api_incident_dict(raw: dict) -> WSTIncident:
+    """Convert a raw API incident dict into a WSTIncident model."""
+    return _parse_incident(raw)
 
-        for additional_info in (status.get("additionalInformation", status.get("additional_information", [])) or []):
-            if not isinstance(additional_info, dict):
-                try:
-                    additional_info = additional_info.to_dict()
-                except AttributeError:
-                    additional_info = vars(additional_info)
-            desc = additional_info.get("description", "")
-            if desc and desc not in descriptions:
-                descriptions.append(desc)
 
-    return WSTIncident(
-        title=data.get("title", ""),
-        start_date=data.get("startDate"),
-        phase=data.get("phase"),
-        scheduled=bool(data.get("scheduled", False)),
-        published=bool(data.get("published", False)),
-        road_names=road_names,
-        descriptions=descriptions,
+def to_wst_data(
+    situation_raw: dict,
+    active_incidents_raw: dict,
+    scheduled_incidents_raw: dict,
+) -> WSTData:
+    """Build WSTData from raw API responses."""
+    situation = from_api_situation(situation_raw)
+    active_incidents = from_api_incidents(active_incidents_raw)
+    scheduled_incidents = from_api_incidents(scheduled_incidents_raw)
+
+    return WSTData(
+        situation=situation,
+        active_incidents=active_incidents,
+        scheduled_incidents=scheduled_incidents,
     )
+
+
+def get_road_sensor_id(road_status: WSTRoadStatus, entry_id: str) -> str:
+    """Generate stable unique ID for a road status sensor."""
+    slug = get_road_slug(road_status.road.id, road_status.road.name)
+    return f"{entry_id}_{slug}"
+
+
+def get_device_key_for_road(road_name: str) -> str:
+    """Get the device key for a road based on its name."""
+    return get_device_for_road(road_name)

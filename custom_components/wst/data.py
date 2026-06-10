@@ -1,9 +1,8 @@
-"""Data types for the WST integration."""
+"""Data types for the WST integration (new API format)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
@@ -19,36 +18,79 @@ type WSTConfigEntry = ConfigEntry[WSTDataUpdateCoordinator]
 
 
 @dataclass
-class WSTRoadSegment:
-    """Represents the status of a single road segment."""
+class WSTDeviation:
+    """Represents a deviation for a road."""
 
+    id: str
+    code: str
+    name: str
+
+
+@dataclass
+class WSTRoad:
+    """Represents a road with its metadata."""
+
+    id: str
     name: str
     direction: str
-    severity: str
-    states: list[str] = field(default_factory=list)
-    additional_information: list[dict[str, str | bool]] = field(default_factory=list)
+
+
+@dataclass
+class WSTRoadStatus:
+    """Represents the status of a single road."""
+
+    id: str
+    road: WSTRoad
+    road_condition: str
+    deviations: list[WSTDeviation] = field(default_factory=list)
 
 
 @dataclass
 class WSTSituation:
     """Represents the overall tunnel situation."""
 
-    segments: dict[str, WSTRoadSegment]
-    overall_severity: str
-    publish_date: datetime | None = None
+    condition: str
+    road_statuses: list[WSTRoadStatus] = field(default_factory=list)
+
+
+@dataclass
+class WSTTravelTime:
+    """Represents additional travel time information."""
+
+    id: str
+    travel_time_option: str | None
+    text: str | None
+
+
+@dataclass
+class WSTIncidentStatus:
+    """Represents a status within an incident."""
+
+    id: str
+    name: str
+    description: str | None
+    phase: str
+    start_offset: int
+    road_statuses: list[WSTRoadStatus] = field(default_factory=list)
+    additional_travel_time: WSTTravelTime | None = None
+    step: str | None = None
+    activated_at: str | None = None
 
 
 @dataclass
 class WSTIncident:
     """Represents an incident (active or scheduled)."""
 
-    title: str
+    id: str
+    name: str
+    description: str | None
+    phase: str
     start_date: str | None = None
-    phase: str | None = None
-    scheduled: bool = False
-    published: bool = False
-    road_names: list[str] = field(default_factory=list)
-    descriptions: list[str] = field(default_factory=list)
+    end_date: str | None = None
+    notify: bool = False
+    statuses: list[WSTIncidentStatus] = field(default_factory=list)
+    scenario: str | None = None
+    expired_at: str | None = None
 
 
 @dataclass

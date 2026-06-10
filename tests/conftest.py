@@ -1,4 +1,4 @@
-"""Test fixtures for the WST integration."""
+"""Test fixtures for the WST integration (new API format)."""
 
 from __future__ import annotations
 
@@ -12,13 +12,13 @@ from homeassistant.core import HomeAssistant
 
 from custom_components.wst.const import DEFAULT_SCAN_INTERVAL, DOMAIN, ENTRY_UNIQUE_ID
 from custom_components.wst.coordinator import WSTDataUpdateCoordinator
-from custom_components.wst.data import WSTData, WSTIncident, WSTRoadSegment, WSTSituation
+from custom_components.wst.data import WSTData
 from custom_components.wst.api import WSTApiClient
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
-def load_fixture(filename: str) -> dict | list:
+def load_fixture(filename: str) -> dict:
     """Load a JSON fixture file."""
     with open(FIXTURES_DIR / filename) as f:
         return json.load(f)
@@ -57,16 +57,9 @@ def mock_api(situation_response, active_incidents_response, scheduled_incidents_
 @pytest.fixture
 def wst_data(situation_response, active_incidents_response, scheduled_incidents_response):
     """Return a parsed WSTData object from fixtures."""
-    from custom_components.wst.models import from_api_incident, from_api_situation
+    from custom_components.wst.models import to_wst_data
 
-    situation = from_api_situation(situation_response)
-    active_incidents = [from_api_incident(i) for i in active_incidents_response]
-    scheduled_incidents = [from_api_incident(i) for i in scheduled_incidents_response]
-    return WSTData(
-        situation=situation,
-        active_incidents=active_incidents,
-        scheduled_incidents=scheduled_incidents,
-    )
+    return to_wst_data(situation_response, active_incidents_response, scheduled_incidents_response)
 
 
 @pytest.fixture

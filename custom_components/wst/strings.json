@@ -30,8 +30,8 @@
   },
   "entity": {
     "sensor": {
-      "overall_severity": {
-        "name": "Overall severity"
+      "condition": {
+        "name": "Tunnel condition"
       },
       "active_incidents": {
         "name": "Active incidents"
@@ -39,22 +39,13 @@
       "scheduled_incidents": {
         "name": "Scheduled incidents"
       },
-      "last_updated": {
-        "name": "Last updated"
-      },
-      "segment_status": {
-        "name": "{road_name} status"
-      },
-      "segment_severity": {
-        "name": "{road_name} severity"
+      "road_condition": {
+        "name": "{road_name} condition"
       }
     },
     "binary_sensor": {
-      "segment_closed": {
-        "name": "{road_name} closed"
-      },
-      "active_incident": {
-        "name": "Active incident"
+      "disrupted": {
+        "name": "Tunnel disrupted"
       }
     }
   }

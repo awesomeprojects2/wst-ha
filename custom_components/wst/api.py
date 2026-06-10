@@ -1,9 +1,4 @@
-"""API client for the WST Status Board API.
-
-Uses aiohttp to call the WST REST API directly, avoiding dependency
-on the generated wst_api_client package structure which may vary
-between versions and generator configurations.
-"""
+"""API client for the WST Status Board API (new format)."""
 
 from __future__ import annotations
 
@@ -21,8 +16,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 PATH_SITUATION = "/situation"
-PATH_INCIDENT_ACTIVE = "/incident/active"
-PATH_INCIDENT_SCHEDULED = "/incident/scheduled"
+PATH_INCIDENT = "/incident"
 
 
 class WSTApiClient:
@@ -44,15 +38,19 @@ class WSTApiClient:
         """Fetch the current tunnel situation from the API."""
         return await self._async_get(PATH_SITUATION)
 
-    async def async_get_active_incidents(self) -> list:
+    async def async_get_incidents(self, phase: str) -> dict:
+        """Fetch incidents from the API for a given phase (ACTIVE or SCHEDULED)."""
+        return await self._async_get(f"{PATH_INCIDENT}?phase={phase}")
+
+    async def async_get_active_incidents(self) -> dict:
         """Fetch active incidents from the API."""
-        return await self._async_get(PATH_INCIDENT_ACTIVE)
+        return await self.async_get_incidents("ACTIVE")
 
-    async def async_get_scheduled_incidents(self) -> list:
+    async def async_get_scheduled_incidents(self) -> dict:
         """Fetch scheduled incidents from the API."""
-        return await self._async_get(PATH_INCIDENT_SCHEDULED)
+        return await self.async_get_incidents("SCHEDULED")
 
-    async def _async_get(self, path: str) -> dict | list:
+    async def _async_get(self, path: str) -> dict:
         """Make a GET request to the API and return the JSON response."""
         url = f"{self._base_url}{path}"
         _LOGGER.info("Requesting WST API: %s", url)
