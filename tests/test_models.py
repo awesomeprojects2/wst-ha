@@ -139,7 +139,14 @@ def test_road_id_to_slug():
 
 
 def test_device_key_for_road():
-    """Test device key determination based on road name."""
-    assert get_device_key_for_road("Westbuis richting Zuid") == "westerscheldetunnel"
-    assert get_device_key_for_road("Sluiskil WST richting Noord") == "sluiskiltunnel"
-    assert get_device_key_for_road("Noordbuis richting Westerscheldetunnel") == "westerscheldetunnel"
+    """Test device key determination based on road UUID."""
+    assert get_device_key_for_road("8ac445f0-bc74-4789-a994-5b3be105b5b3") == "westerscheldetunnel"
+    assert get_device_key_for_road("dcc1c0df-6461-468b-84e0-1124fb689477") == "westerscheldetunnel"
+    assert get_device_key_for_road("fc304bb7-3c57-4dd0-961f-0106f648156d") == "sluiskiltunnel"
+    assert get_device_key_for_road("b6e3aeeb-42e3-43ba-8be1-0366fe51b1b8") == "sluiskiltunnel"
+    assert get_device_key_for_road("4789380f-418c-4cf0-b947-8bb8b1717d8c") == "roads"
+    assert get_device_key_for_road("fc4086fe-acd0-403c-8fe4-07176937a355") == "roads"
+    assert get_device_key_for_road("331646fc-ea99-48a8-aeee-5bbb6975ed6a") == "roads"
+    assert get_device_key_for_road("dab49083-3f4a-4f21-bef4-57243140ea66") == "roads"
+    assert get_device_key_for_road("unknown-id", "Sluiskil road") == "sluiskiltunnel"
+    assert get_device_key_for_road("unknown-id", "Some other road") == "westerscheldetunnel"

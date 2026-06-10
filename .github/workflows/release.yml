@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  validate:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,13 +30,16 @@ jobs:
               f.write('\n')
           "
 
-      - name: Commit synced version
+      - name: Commit synced version and update tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add custom_components/wst/manifest.json
           git diff --cached --quiet || git commit -m "chore: sync version to ${{ github.ref_name }}"
           git push origin HEAD:main
+          # Move the tag to include the version-sync commit so HACS gets the correct manifest
+          git tag -f "${{ github.ref_name }}"
+          git push origin "${{ github.ref_name }}" --force
 
       - name: Home Assistant hassfest
         uses: home-assistant/actions/hassfest@master
@@ -45,12 +48,6 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
-
-  release:
-    needs: validate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

@@ -141,7 +141,7 @@ class WSTRoadSensor(WSTSensor):
         coordinator: WSTDataUpdateCoordinator,
         description: WSTRoadSensorEntityDescription,
     ) -> None:
-        device_key = get_device_key_for_road(description.road_name)
+        device_key = get_device_key_for_road(description.road_id, description.road_name)
         super().__init__(coordinator, device_key=device_key)
         self.entity_description = description
         self._attr_unique_id = description.key
