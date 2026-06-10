@@ -63,18 +63,23 @@ Each road segment gets a single sensor showing its current condition.
 |--------|------|-------|------------|
 | `{road_name} condition` | `sensor` | `open` or `closed` | `direction`, `deviation` (list of `{code, name}`), `description` (incident text), `extra_travel_time` |
 
-**Road Segments:**
+**Westerscheldetunnel** (6 road segments):
 
-| Slug | Direction |
-|------|-----------|
-| Westbuis (Zuid) | SOUTH |
-| Zuidbuis (Zuid) | SOUTH |
-| Tolplein WST (Zuid) | SOUTH |
-| WST Sluiskil (Zuid) | SOUTH |
-| Noordbuis (Noord) | NORTH |
-| Oostbuis (Noord) | NORTH |
-| WST Tolplein (Noord) | NORTH |
-| Sluiskil WST (Noord) | NORTH |
+| API Name | Tube | Direction |
+|----------|------|-----------|
+| Westbuis richting Zuid | West tube | SOUTH |
+| Oostbuis richting Noord | East tube | NORTH |
+| Zuidbuis richting Zuid | South tube | SOUTH |
+| Noordbuis richting Westerscheldetunnel | North tube | NORTH |
+| Tolplein WST richting Zuid | Toll plaza | SOUTH |
+| WST Tolplein richting Noord | Toll plaza | NORTH |
+
+**Sluiskiltunnel** (2 road segments):
+
+| API Name | Direction |
+|----------|-----------|
+| Sluiskil WST richting Noord | NORTH |
+| WST Sluiskil richting Zuid | SOUTH |
 
 Sensors are created dynamically based on what the API returns, so new road segments appear automatically.
 
