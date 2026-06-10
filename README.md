@@ -1,14 +1,16 @@
-# Westerscheldetunnel (WST) Status Board - Home Assistant Integration
+# Westerscheldetunnel (WST) — Home Assistant Integration
 
 A Home Assistant custom component to monitor the status of the Westerscheldetunnel and Sluiskiltunnel in the Netherlands.
 
 ## Features
 
-- **Real-time tunnel status** — Monitors all 8 road segments across both tunnels
-- **Incident tracking** — Active and scheduled incidents with details
-- **28 entities** — Comprehensive monitoring with status, severity, and binary sensors
-- **Configurable polling** — Adjust the refresh interval from the UI
-- **HACS compatible** — Install and update via the Home Assistant Community Store
+- **Road condition per segment** — Each road has a single sensor showing its condition (`open` / `closed`) with rich attributes (deviation info, incident description, extra travel time)
+- **Incident tracking** — Active and scheduled incidents with name, description, and date attributes
+- **Disruption alert** — Binary sensor that turns on when the tunnel condition is anything other than `open`
+- **12 entities total** (down from 28) — simpler and more informative
+- **5-minute minimum poll interval** — prevents API abuse
+- **Configurable polling** — adjust the refresh interval from the UI
+- **HACS compatible** — install and update via the Home Assistant Community Store
 
 ## Installation
 
@@ -28,7 +30,7 @@ A Home Assistant custom component to monitor the status of the Westerscheldetunn
 
 ## Configuration
 
-This integration is configured entirely through the UI. No YAML configuration is needed.
+Configured entirely through the UI — no YAML needed.
 
 1. Go to **Settings → Devices & Services**
 2. Click **Add Integration**
@@ -39,7 +41,7 @@ This integration is configured entirely through the UI. No YAML configuration is
 
 | Option | Default | Min | Max | Description |
 |--------|---------|-----|-----|-------------|
-| Polling interval | 300s | 30s | 3600s | How often to poll the API for updates |
+| Polling interval | 300 s | 300 s | 3600 s | How often to poll the API for updates |
 
 To change the polling interval, click **Configure** on the integration card.
 
@@ -53,50 +55,73 @@ To change the polling interval, click **Configure** on the integration card.
 | **Sluiskiltunnel** | Secondary tunnel (2 road segments) |
 | **WST Status Board** | System-level sensors |
 
-### Road Segment Entities (per segment × 8)
+### Road Condition Sensors (8 — dynamic, 1 per road)
 
-Each of the 8 road segments has:
+Each road segment gets a single sensor showing its current condition.
 
-| Entity | Type | Description |
-|--------|------|-------------|
-| `{segment} status` | `sensor` | Primary status: normal, closed, traffic-queues, etc. |
-| `{segment} severity` | `sensor` | Severity level: none, low, medium, high, critical |
-| `{segment} closed` | `binary_sensor` | ON when the segment is closed |
+| Entity | Type | State | Attributes |
+|--------|------|-------|------------|
+| `{road_name} condition` | `sensor` | `open` or `closed` | `direction`, `deviation` (list of `{code, name}`), `description` (incident text), `extra_travel_time` |
 
 **Road Segments:**
-- Toll square → Westerscheldetunnel (south)
-- Westerscheldetunnel West tube (south)
-- Westerscheldetunnel → Axelsche gat (south)
-- Sluiskiltunnel south
-- Westerscheldetunnel → Toll square (north)
-- Westerscheldetunnel East tube (north)
-- Axelsche gat → Westerscheldetunnel (north)
-- Sluiskiltunnel north
 
-### System Entities
+| Slug | Direction |
+|------|-----------|
+| Westbuis (Zuid) | SOUTH |
+| Zuidbuis (Zuid) | SOUTH |
+| Tolplein WST (Zuid) | SOUTH |
+| WST Sluiskil (Zuid) | SOUTH |
+| Noordbuis (Noord) | NORTH |
+| Oostbuis (Noord) | NORTH |
+| WST Tolplein (Noord) | NORTH |
+| Sluiskil WST (Noord) | NORTH |
 
-| Entity | Type | Description |
-|--------|------|-------------|
-| Overall severity | `sensor` | Worst severity across all segments |
-| Active incidents | `sensor` | Count of active incidents (titles & dates as attributes) |
-| Scheduled incidents | `sensor` | Count of scheduled incidents (titles & dates as attributes) |
-| Last updated | `sensor` | Timestamp of last API data refresh |
-| Active incident | `binary_sensor` | ON when any active incident exists |
+Sensors are created dynamically based on what the API returns, so new road segments appear automatically.
 
-### Status Values
+### System Sensors (3)
 
-The status sensor can report the following states, in order of priority:
+| Entity | Type | State | Attributes |
+|--------|------|-------|------------|
+| Tunnel condition | `sensor` | `open` / `closed` — overall tunnel condition | — |
+| Active incidents | `sensor` | Count of active incidents | `incidents` — list of `{name, description, start_date}` |
+| Scheduled incidents | `sensor` | Count of scheduled incidents | `incidents` — list of `{name, description, start_date, end_date}` |
 
-`closed` → `detour` → `two-way-traffic` → `single-lane` → `traffic-queues` → `metering-light` → `roadworks` → `maximum-width` → `speed-limit-30` → `speed-limit-50` → `speed-limit-70` → `speed-limit-80` → `fog-likely` → `slippery-road-surface` → `snow-or-ice` → `other` → `normal` (when no states are active)
+### Binary Sensor (1)
+
+| Entity | Type | State | Attributes |
+|--------|------|-------|------------|
+| Tunnel disrupted | `binary_sensor` | `ON` when condition ≠ `open` | `condition`, `active_incidents` (list of names) |
+
+### Condition Values
+
+The overall tunnel condition and road conditions use two states:
+
+| Value | Meaning |
+|-------|---------|
+| `open` | Normal operations, no disruptions |
+| `closed` | Some or all roads are closed or disrupted |
+
+Road conditions map directly from the API's `roadCondition` field (normalized to lowercase).
+
+## API
+
+This integration queries the public endpoints of the Westerscheldetunnel API:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /situation` | Current road conditions and overall status |
+| `GET /incident?phase=ACTIVE` | Active incidents with road status details |
+| `GET /incident?phase=SCHEDULED` | Scheduled (planned) incidents |
+
+Base URL: `https://api.verkeer.westerscheldetunnel.nl`
 
 ## Requirements
 
 - Home Assistant 2024.1.0 or later
-- `wst_api_client` Python package (automatically installed)
 
 ## Credits
 
-Data sourced from [WST Status Board API](https://api.wststatusboard.nl).
+Data sourced from [Westerscheldetunnel API](https://api.verkeer.westerscheldetunnel.nl).
 
 ## License
 
