@@ -5,7 +5,7 @@ from __future__ import annotations
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, SEGMENT_TO_DEVICE, DEVICE_INFO
+from .const import DOMAIN, DEVICE_INFO
 from .coordinator import WSTDataUpdateCoordinator
 
 
@@ -17,12 +17,10 @@ class WSTEntity(CoordinatorEntity[WSTDataUpdateCoordinator]):
     def __init__(
         self,
         coordinator: WSTDataUpdateCoordinator,
-        road_key: str | None = None,
         device_key: str | None = None,
     ) -> None:
         super().__init__(coordinator)
-        self._road_key = road_key
-        self._device_key = device_key or (SEGMENT_TO_DEVICE.get(road_key, "wst_status_board") if road_key else "wst_status_board")
+        self._device_key = device_key or "wst_status_board"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -35,8 +33,3 @@ class WSTEntity(CoordinatorEntity[WSTDataUpdateCoordinator]):
             model=device_config["model"],
             manufacturer=device_config["manufacturer"],
         )
-
-    @property
-    def available(self) -> bool:
-        """Return True if coordinator data is available."""
-        return self.coordinator.last_update_success and self.coordinator.data is not None

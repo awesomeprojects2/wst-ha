@@ -1,39 +1,43 @@
-[
-  {
-    "title": "Gepland onderhoud Westerscheldetunnel",
-    "startDate": "2022-10-15T06:00:00+00:00",
-    "statuses": [
-      {
-        "roadStatuses": [
-          {
-            "road": {
-              "name": "westerscheldetunnel-east",
-              "direction": "north"
-            },
-            "states": [
-              {
-                "name": "roadworks",
-                "severity": "low",
-                "priority": 1,
-                "icon": "",
-                "category": "situations"
-              }
-            ],
-            "detours": []
-          }
-        ],
-        "phase": "scheduled",
-        "additionalInformation": [
-          {
-            "direction": "both",
-            "description": "Gepland onderhoud: westbuis gesloten van 22:00-06:00.",
-            "notify": true
-          }
-        ]
-      }
-    ],
-    "phase": "scheduled",
-    "scheduled": true,
-    "published": true
-  }
-]
+{
+  "items": [
+    {
+      "id": "incident-2",
+      "name": "Gepland onderhoud Westerscheldetunnel",
+      "description": "Gepland onderhoud aan de tunnelsystemen.",
+      "phase": "SCHEDULED",
+      "startDate": "2026-06-15T22:00:00+00:00",
+      "endDate": "2026-06-16T06:00:00+00:00",
+      "notify": true,
+      "statuses": [
+        {
+          "id": "status-2",
+          "name": "Westbuis gesloten van 22:00-06:00",
+          "description": "De Westbuis is gesloten voor onderhoudswerkzaamheden.",
+          "phase": "SCHEDULED",
+          "startOffset": 0,
+          "roadStatuses": [
+            {
+              "id": "road-status-2",
+              "road": {
+                "id": "8ac445f0-bc74-4789-a994-5b3be105b5b3",
+                "name": "Westbuis richting Zuid",
+                "direction": "SOUTH"
+              },
+              "roadCondition": "CLOSED",
+              "deviations": []
+            }
+          ],
+          "additionalTravelTime": {
+            "id": "tt-2",
+            "travelTimeOption": null,
+            "text": "10-15 minuten"
+          },
+          "step": null,
+          "activatedAt": null
+        }
+      ],
+      "scenario": null,
+      "expiredAt": null
+    }
+  ]
+}

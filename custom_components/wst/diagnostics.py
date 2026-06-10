@@ -24,17 +24,39 @@ async def async_get_config_entry_diagnostics(
     return {
         "last_update_success": coordinator.last_update_success,
         "last_update_time": str(coordinator.last_update) if coordinator.last_update else None,
-        "overall_severity": data.situation.overall_severity,
-        "publish_date": data.situation.publish_date,
-        "active_incidents_count": len(data.active_incidents),
-        "scheduled_incidents_count": len(data.scheduled_incidents),
-        "segments": {
-            key: {
-                "name": seg.name,
-                "direction": seg.direction,
-                "severity": seg.severity,
-                "states": seg.states,
+        "condition": data.situation.condition,
+        "road_statuses": [
+            {
+                "id": rs.road.id,
+                "name": rs.road.name,
+                "direction": rs.road.direction,
+                "road_condition": rs.road_condition,
+                "deviations": [{"code": d.code, "name": d.name} for d in rs.deviations],
             }
-            for key, seg in data.situation.segments.items()
-        },
+            for rs in data.situation.road_statuses
+        ],
+        "active_incidents_count": len(data.active_incidents),
+        "active_incidents": [
+            {
+                "id": i.id,
+                "name": i.name,
+                "description": i.description,
+                "phase": i.phase,
+                "start_date": i.start_date,
+                "end_date": i.end_date,
+            }
+            for i in data.active_incidents
+        ],
+        "scheduled_incidents_count": len(data.scheduled_incidents),
+        "scheduled_incidents": [
+            {
+                "id": i.id,
+                "name": i.name,
+                "description": i.description,
+                "phase": i.phase,
+                "start_date": i.start_date,
+                "end_date": i.end_date,
+            }
+            for i in data.scheduled_incidents
+        ],
     }

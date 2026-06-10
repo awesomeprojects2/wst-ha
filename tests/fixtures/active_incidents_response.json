@@ -1,59 +1,49 @@
-[
-  {
-    "title": "Verkeersdrukte Oostbuis",
-    "startDate": "2022-10-06T14:47:46.133000+00:00",
-    "statuses": [
-      {
-        "roadStatuses": [
-          {
-            "road": {
-              "name": "westerscheldetunnel-east",
-              "direction": "north"
-            },
-            "states": [
-              {
-                "name": "traffic-queues",
-                "severity": "medium",
-                "priority": 0,
-                "icon": "",
-                "category": "situations"
-              }
-            ],
-            "detours": []
+{
+  "items": [
+    {
+      "id": "incident-1",
+      "name": "Asfaltwerkzaamheden rondom Noordbuis",
+      "description": "In de nacht van woensdag 10 op donderdag 11 juni 2026 worden asfaltwerkzaamheden uitgevoerd.",
+      "phase": "ACTIVE",
+      "startDate": "2026-06-10T17:00:00+00:00",
+      "endDate": "2026-06-11T03:00:00+00:00",
+      "notify": true,
+      "statuses": [
+        {
+          "id": "status-1",
+          "name": "Afgesloten tot circa 05.00 uur",
+          "description": "Voor de Noordbuis is er een volledige afsluiting.",
+          "phase": "ACTIVE",
+          "startOffset": 0,
+          "roadStatuses": [
+            {
+              "id": "road-status-1",
+              "road": {
+                "id": "fc304bb7-3c57-4dd0-961f-0106f648156d",
+                "name": "Noordbuis richting Westerscheldetunnel",
+                "direction": "NORTH"
+              },
+              "roadCondition": "CLOSED",
+              "deviations": [
+                {
+                  "id": "dev-u65",
+                  "code": "U65",
+                  "name": "Richting Oostburg/Borssele via de brug bij Sluiskil"
+                }
+              ]
+            }
+          ],
+          "additionalTravelTime": {
+            "id": "tt-1",
+            "travelTimeOption": null,
+            "text": "Enkele minuten"
           },
-          {
-            "road": {
-              "name": "axelsche-gat-to-westerscheldetunnel",
-              "direction": "north"
-            },
-            "states": [
-              {
-                "name": "other",
-                "severity": "medium",
-                "priority": 0,
-                "icon": "",
-                "category": "situations"
-              }
-            ],
-            "detours": []
-          }
-        ],
-        "phase": "active",
-        "additionalInformation": [
-          {
-            "direction": "south",
-            "notify": false
-          },
-          {
-            "direction": "north",
-            "description": "Door files op de ring van Antwerpen is het erg druk.",
-            "notify": true
-          }
-        ]
-      }
-    ],
-    "phase": "active",
-    "scheduled": false,
-    "published": true
-  }
-]
+          "step": null,
+          "activatedAt": "2026-06-10T17:00:02+00:00"
+        }
+      ],
+      "scenario": null,
+      "expiredAt": null
+    }
+  ]
+}

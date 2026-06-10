@@ -1,90 +1,91 @@
 {
-  "status": {
-    "toll-square-to-westerscheldetunnel": {
-      "direction": "south",
-      "name": "toll-square-to-westerscheldetunnel",
-      "severity": "none",
-      "states": [],
-      "additionalInformation": []
+  "condition": "OPEN",
+  "roadStatuses": [
+    {
+      "id": "status-1",
+      "road": {
+        "id": "8ac445f0-bc74-4789-a994-5b3be105b5b3",
+        "name": "Westbuis richting Zuid",
+        "direction": "SOUTH"
+      },
+      "roadCondition": "OPEN",
+      "deviations": []
     },
-    "westerscheldetunnel-west": {
-      "direction": "south",
-      "name": "westerscheldetunnel-west",
-      "severity": "none",
-      "states": [],
-      "additionalInformation": []
+    {
+      "id": "status-2",
+      "road": {
+        "id": "dcc1c0df-6461-468b-84e0-1124fb689477",
+        "name": "Oostbuis richting Noord",
+        "direction": "NORTH"
+      },
+      "roadCondition": "OPEN",
+      "deviations": []
     },
-    "westerscheldetunnel-to-axelsche-gat": {
-      "direction": "south",
-      "name": "westerscheldetunnel-to-axelsche-gat",
-      "severity": "none",
-      "states": [],
-      "additionalInformation": []
-    },
-    "sluiskiltunnel-south": {
-      "direction": "south",
-      "name": "sluiskiltunnel-south",
-      "severity": "none",
-      "states": [],
-      "additionalInformation": []
-    },
-    "westerscheldetunnel-to-toll-square": {
-      "direction": "north",
-      "name": "westerscheldetunnel-to-toll-square",
-      "severity": "none",
-      "states": [],
-      "additionalInformation": []
-    },
-    "westerscheldetunnel-east": {
-      "direction": "north",
-      "name": "westerscheldetunnel-east",
-      "severity": "medium",
-      "states": [
+    {
+      "id": "status-3",
+      "road": {
+        "id": "b6e3aeeb-42e3-43ba-8be1-0366fe51b1b8",
+        "name": "Zuidbuis richting Zuid",
+        "direction": "SOUTH"
+      },
+      "roadCondition": "CLOSED",
+      "deviations": [
         {
-          "name": "traffic-queues",
-          "severity": "medium",
-          "priority": 0,
-          "icon": "image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjwvc3ZnPg==",
-          "category": "situations"
-        }
-      ],
-      "additionalInformation": [
-        {
-          "direction": "north",
-          "description": "Traffic queues on the east tube heading north.",
-          "notify": true
+          "id": "dev-1",
+          "code": "U65",
+          "name": "Richting Oostburg/Borssele via de brug bij Sluiskil"
         }
       ]
     },
-    "axelsche-gat-to-westerscheldetunnel": {
-      "direction": "north",
-      "name": "axelsche-gat-to-westerscheldetunnel",
-      "severity": "medium",
-      "states": [
-        {
-          "name": "other",
-          "severity": "medium",
-          "priority": 0,
-          "icon": "image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjwvc3ZnPg==",
-          "category": "situations"
-        }
-      ],
-      "additionalInformation": [
-        {
-          "direction": "north",
-          "description": "Other situation on the approach road.",
-          "notify": true
-        }
-      ]
+    {
+      "id": "status-4",
+      "road": {
+        "id": "fc304bb7-3c57-4dd0-961f-0106f648156d",
+        "name": "Noordbuis richting Westerscheldetunnel",
+        "direction": "NORTH"
+      },
+      "roadCondition": "OPEN",
+      "deviations": []
     },
-    "sluiskiltunnel-north": {
-      "direction": "north",
-      "name": "sluiskiltunnel-north",
-      "severity": "none",
-      "states": [],
-      "additionalInformation": []
+    {
+      "id": "status-5",
+      "road": {
+        "id": "4789380f-418c-4cf0-b947-8bb8b1717d8c",
+        "name": "Tolplein WST richting Zuid",
+        "direction": "SOUTH"
+      },
+      "roadCondition": "OPEN",
+      "deviations": []
+    },
+    {
+      "id": "status-6",
+      "road": {
+        "id": "fc4086fe-acd0-403c-8fe4-07176937a355",
+        "name": "WST Tolplein richting Noord",
+        "direction": "NORTH"
+      },
+      "roadCondition": "OPEN",
+      "deviations": []
+    },
+    {
+      "id": "status-7",
+      "road": {
+        "id": "331646fc-ea99-48a8-aeee-5bbb6975ed6a",
+        "name": "Sluiskil WST richting Noord",
+        "direction": "NORTH"
+      },
+      "roadCondition": "OPEN",
+      "deviations": []
+    },
+    {
+      "id": "status-8",
+      "road": {
+        "id": "dab49083-3f4a-4f21-bef4-57243140ea66",
+        "name": "WST Sluiskil richting Zuid",
+        "direction": "SOUTH"
+      },
+      "roadCondition": "OPEN",
+      "deviations": []
     }
-  },
-  "severity": "medium",
-  "publishDate": "2022-10-06T14:52:42.868343+00:00"
+  ]
 }
