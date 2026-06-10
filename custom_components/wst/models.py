@@ -143,6 +143,5 @@ def get_road_sensor_id(road_status: WSTRoadStatus, entry_id: str) -> str:
     return f"{entry_id}_{slug}"
 
 
-def get_device_key_for_road(road_name: str) -> str:
-    """Get the device key for a road based on its name."""
-    return get_device_for_road(road_name)
+def get_device_key_for_road(road_id: str, road_name: str = "") -> str:
+    return get_device_for_road(road_id, road_name)

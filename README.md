@@ -51,8 +51,9 @@ To change the polling interval, click **Configure** on the integration card.
 
 | Device | Description |
 |--------|-------------|
-| **Westerscheldetunnel** | Main tunnel complex (6 road segments) |
-| **Sluiskiltunnel** | Secondary tunnel (2 road segments) |
+| **Westerscheldetunnel** | Main tunnel (2 tubes: Westbuis, Oostbuis) |
+| **Sluiskiltunnel** | Sluiskil tunnel (2 tubes: Noordbuis, Zuidbuis) |
+| **Roads** | Approach and exit roads for both tunnels (4 roads) |
 | **WST Status Board** | System-level sensors |
 
 ### Road Condition Sensors (8 — dynamic, 1 per road)
@@ -63,21 +64,26 @@ Each road segment gets a single sensor showing its current condition.
 |--------|------|-------|------------|
 | `{road_name} condition` | `sensor` | `open` or `closed` | `direction`, `deviation` (list of `{code, name}`), `description` (incident text), `extra_travel_time` |
 
-**Westerscheldetunnel** (6 road segments):
+**Westerscheldetunnel** (2 tunnel tubes):
 
 | API Name | Tube | Direction |
 |----------|------|-----------|
 | Westbuis richting Zuid | West tube | SOUTH |
 | Oostbuis richting Noord | East tube | NORTH |
-| Zuidbuis richting Zuid | South tube | SOUTH |
-| Noordbuis richting Westerscheldetunnel | North tube | NORTH |
-| Tolplein WST richting Zuid | Toll plaza | SOUTH |
-| WST Tolplein richting Noord | Toll plaza | NORTH |
 
-**Sluiskiltunnel** (2 road segments):
+**Sluiskiltunnel** (2 tunnel tubes):
+
+| API Name | Tube | Direction |
+|----------|------|-----------|
+| Noordbuis richting Westerscheldetunnel | North tube | NORTH |
+| Zuidbuis richting Gent | South tube | SOUTH |
+
+**Roads** (4 approach/exit roads):
 
 | API Name | Direction |
 |----------|-----------|
+| Tolplein WST richting Zuid | SOUTH |
+| WST Tolplein richting Noord | NORTH |
 | Sluiskil WST richting Noord | NORTH |
 | WST Sluiskil richting Zuid | SOUTH |
 
