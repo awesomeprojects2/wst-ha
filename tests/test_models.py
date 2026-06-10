@@ -106,7 +106,7 @@ def test_from_api_incidents():
     incident = result[0]
     assert incident.id == "incident-1"
     assert incident.name == "Test incident"
-    assert incident.phase == "ACTIVE"
+    assert incident.phase == "active"
     assert incident.notify is True
     assert len(incident.statuses) == 1
 

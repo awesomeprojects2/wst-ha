@@ -41,7 +41,7 @@ def _parse_road_status(data: dict) -> WSTRoadStatus:
     return WSTRoadStatus(
         id=data.get("id", ""),
         road=_parse_road(road_data),
-        road_condition=data.get("roadCondition", "OPEN"),
+        road_condition=data.get("roadCondition", "OPEN").lower(),
         deviations=[_parse_deviation(d) for d in deviations_data],
     )
 
@@ -61,11 +61,12 @@ def _parse_incident_status(data: dict) -> WSTIncidentStatus:
     """Parse an incident status from API data."""
     road_statuses_data = data.get("roadStatuses", []) or []
 
+    phase_raw = data.get("phase", "")
     return WSTIncidentStatus(
         id=data.get("id", ""),
         name=data.get("name", ""),
         description=data.get("description"),
-        phase=data.get("phase", ""),
+        phase=phase_raw.lower() if phase_raw else "",
         start_offset=data.get("startOffset", 0),
         road_statuses=[_parse_road_status(rs) for rs in road_statuses_data],
         additional_travel_time=_parse_travel_time(data.get("additionalTravelTime")),
@@ -78,11 +79,12 @@ def _parse_incident(data: dict) -> WSTIncident:
     """Parse an incident from API data."""
     statuses_data = data.get("statuses", []) or []
 
+    phase_raw = data.get("phase", "")
     return WSTIncident(
         id=data.get("id", ""),
         name=data.get("name", ""),
         description=data.get("description"),
-        phase=data.get("phase", ""),
+        phase=phase_raw.lower() if phase_raw else "",
         start_date=data.get("startDate"),
         end_date=data.get("endDate"),
         notify=bool(data.get("notify", False)),
@@ -97,7 +99,7 @@ def from_api_situation(raw_situation: dict) -> WSTSituation:
     road_statuses_data = raw_situation.get("roadStatuses", []) or []
 
     return WSTSituation(
-        condition=raw_situation.get("condition", "OPEN"),
+        condition=raw_situation.get("condition", "OPEN").lower(),
         road_statuses=[_parse_road_status(rs) for rs in road_statuses_data],
     )
 
